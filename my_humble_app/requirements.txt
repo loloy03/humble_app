@@ -45,7 +45,7 @@ six==1.16.0
 smmap==5.0.1
 streamlit==1.37.1
 streamlit-option-menu==0.3.13
-streamlit-extras=
+streamlit-extras==0.3.4
 tenacity==8.5.0
 toml==0.10.2
 toolz==0.12.1
@@ -54,4 +54,5 @@ typing_extensions==4.12.2
 tzdata==2024.1
 urllib3==2.2.2
 watchdog==4.0.1
-streamlit-aggrid
+# gsheets-streamlit==0.1.6
+streamlit-aggrid==0.3.4
