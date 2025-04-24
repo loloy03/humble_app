@@ -1,1 +1,1 @@
-web: streamlit run tryhumble.py
+web: streamlit run tryhumble.py --server.port=$PORT --server.address=0.0.0.0
