@@ -12,6 +12,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 import base64
 from io import BytesIO
 import plotly.express as px
+import calendar 
 
 # --- PAGE SETUP ---
 st.set_page_config(layout="wide")
@@ -122,12 +123,12 @@ with st.sidebar:
             "Control Tower", 
             "Inventory Dashboard", 
             "Inbounds Dashboard", 
-            "Outbounds Dashboard", 
+            "Outbounds Dashboard",
             "FAQs/Guide", 
             "Humble Bot"
         ],
         icons=["house", "box2", "file-arrow-down", "file-arrow-up", "question-lg", "chat"],
-        default_index=-1,
+        default_index=0,
         key="main_page",
         styles={
             "container": {
@@ -248,7 +249,7 @@ def metric_card(title, value, suffix=""):
 
 @st.cache_data(ttl=60)
 def get_control_tower_data(sheet_index=0):
-    credentials_path = "control-tower-454909-84b11e26051b.json"
+    credentials_path = "control-tower-454909-57be7bcbb0a5.json"
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
     gc = gspread.authorize(credentials)
@@ -315,12 +316,29 @@ if page == "Control Tower":
 
                 col1, col2, col3 = st.columns(3)
 
+                card_style = """
+                    <style>
+                        .hover-card {
+                            background-color: #ffffff;
+                            border-radius: 12px;
+                            padding: 20px;
+                            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                            text-align: center;
+                            transition: transform 0.2s ease, box-shadow 0.2s ease;
+                        }
+                        .hover-card:hover {
+                            transform: translateY(-6px);
+                            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+                        }
+                    </style>
+                """
+                st.markdown(card_style, unsafe_allow_html=True)
+
                 with col1:
                     st.markdown("""
-                    <div style='background-color: #ffffff; border-radius: 12px; padding: 20px; 
-                                box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center;'>
-                        <img src="https://cdn-icons-png.flaticon.com/512/3665/3665923.png" width="60"/>
-                        <h4 style='margin-top: 10px;'>📦 Supplier Progress Tracker</h4>
+                    <div class='hover-card'>
+                        <img src="https://cdn-icons-png.flaticon.com/128/16133/16133264.png" width="60"/>
+                        <h4 style='margin-top: 10px;'>Supplier Progress Tracker</h4>
                         <p style='font-size: 14px; color: #444;'>
                         Track deals, PIFs, valuations, and more for onboarded clients. 
                         View endorsement dates, signed documents, and activation status all in one place.
@@ -330,10 +348,9 @@ if page == "Control Tower":
 
                 with col2:
                     st.markdown("""
-                    <div style='background-color: #ffffff; border-radius: 12px; padding: 20px; 
-                                box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center;'>
-                        <img src="https://cdn-icons-png.flaticon.com/512/4248/4248443.png" width="60"/>
-                        <h4 style='margin-top: 10px;'>📋 Account Masterlist</h4>
+                    <div class='hover-card'>
+                        <img src="https://cdn-icons-png.flaticon.com/128/6012/6012311.png" width="60"/>
+                        <h4 style='margin-top: 10px;'>Account Masterlist</h4>
                         <p style='font-size: 14px; color: #444;'>
                         Access full account metadata, including revenue breakdown and status tags. 
                         Use filters to analyze active and inactive accounts.
@@ -343,10 +360,9 @@ if page == "Control Tower":
 
                 with col3:
                     st.markdown("""
-                    <div style='background-color: #ffffff; border-radius: 12px; padding: 20px; 
-                                box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center;'>
-                        <img src="https://cdn-icons-png.flaticon.com/512/3803/3803228.png" width="60"/>
-                        <h4 style='margin-top: 10px;'>🧩 Prospects</h4>
+                    <div class='hover-card'>
+                        <img src="https://cdn-icons-png.flaticon.com/128/10656/10656229.png" width="60"/>
+                        <h4 style='margin-top: 10px;'>Prospects</h4>
                         <p style='font-size: 14px; color: #444;'>
                         Manage incoming schedules such as oculars, QC, and inbounds. 
                         Linked to the Inbound Scheduler — updates in real time based on form submissions.
@@ -380,12 +396,13 @@ if page == "Control Tower":
                     border-radius: 22px;
                     padding: 24px 20px;
                     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
-                    height: 93px;
+                    height: 80px;
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
                     align-items: flex-start;
                     transition: all 0.2s ease-in-out;
+                    border-left: 4px solid #605399;
                 }
                 .info-card:hover {
                     transform: scale(1.03) translateY(-6px);
@@ -393,13 +410,13 @@ if page == "Control Tower":
                     transition: all 0.2s ease-in-out;
                 }
                 .info-label {
-                    font-size: 14px;
-                    font-weight: 600;
+                    font-size: 12px;
+                    font-weight: 550;
                     color: #666;
-                    margin-bottom: 6px;
+                    margin-bottom: 2px;
                 }
                 .info-value {
-                    font-size: 20px;
+                    font-size: 17px;
                     font-weight: 700;
                     color: #1e1e1e;
                 }
@@ -523,122 +540,343 @@ if page == "Control Tower":
                         <hr style='margin-top: -10px; margin-bottom: 25px; border: none; border-top: 1.5px solid transparent;' />
                     """, unsafe_allow_html=True)
 
-                month_filter = "All"
-                if "Month-Year" in df.columns:
-                    months = sorted(df["Month-Year"].dropna().unique().tolist())
-                    month_filter = st.selectbox("📅 Filter by Endorsement Month", ["All"] + months)
-                    if month_filter != "All":
-                        df = df[df["Month-Year"] == month_filter]
-
-                st.markdown("<h4 style='margin-top: 1rem;'>📊 Insights Summary</h4>", unsafe_allow_html=True)
-                top1, top2 = st.columns(2)
-                with top1:
-                    metric_card("Total Activated Accounts", df["Account Name"].nunique())
-
-                if month_filter == "All" and "Month-Year" in df.columns:
-                    with top2:
-                        top_month = df["Month-Year"].value_counts().idxmax()
-                        top_count = df["Month-Year"].value_counts().max()
-                        metric_card("Top Activation Month", f"{top_month} ({top_count})")
-
-                col1, col2 = st.columns(2)
-                with col1:
-                    account_counts = df["Account Type"].dropna().value_counts().reset_index()
-                    account_counts.columns = ["Account Type", "Count"]
-                    fig1 = px.pie(account_counts, values="Count", names="Account Type",
-                                title="Account Type Distribution", hole=0.3)
-                    fig1.update_traces(textposition='inside', textinfo='percent+label', textfont_size=12)
-                    fig1.update_layout(height=280, margin=dict(t=20, b=10, l=10, r=10), title_font_size=16)
-                    st.plotly_chart(fig1, use_container_width=True)
-
-                with col2:
-                    df["Grouped Account"] = df["Account Name"].str.replace(r"(B\d+|Batch \d+| - [A-Za-z\s]+)", "", regex=True).str.strip()
-                    grouped_counts = df["Grouped Account"].value_counts().reset_index()
-                    grouped_counts.columns = ["Grouped Account", "Count"]
-                    top_clients = grouped_counts.head(5)
-                    fig2 = px.pie(top_clients, values="Count", names="Grouped Account",
-                                title="Top 5 Client Distribution", hole=0.3)
-                    fig2.update_traces(textposition='inside', textinfo='percent+label', textfont_size=12)
-                    fig2.update_layout(height=280, margin=dict(t=30, b=10, l=10, r=10), title_font_size=16)
-                    st.plotly_chart(fig2, use_container_width=True)
-
                   
+                    # === Divider ===
+                    st.markdown("""
+                        <hr style='margin-top: 30px; margin-bottom: 30px; border: none; border-top: 2px solid #ccc;' />
+                    """, unsafe_allow_html=True)
 
-# --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                # === Metric Cards CSS (no chart containers) ===
+                st.markdown("""
+                <style>
+                .metric-card {
+                    background-color: #f5e1ff;
+                    border-radius: 20px;
+                    padding: 1.5rem 1.2rem;
+                    margin-bottom: 1rem;
+                    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+                    height: 190px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: flex-end;
+                    transition: all 0.25s ease;
+                    border-left: 4px solid #605399; /* Adjust color and width as needed */
+                }
+                .metric-card:hover {
+                    transform: translateY(-6px);
+                    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+                }
+                .metric-title {
+                    color: #666;
+                    font-weight: 550;
+                    font-size: 12px;
+                    margin-bottom: 6px;
+                }
+                .metric-growth {
+                    font-size: 13px;
+                    font-weight: 600;
+                    margin-bottom: 4px;
+                }
+                .metric-value {
+                    font-size: 22px;
+                    font-weight: 700;
+                    color: #1c1c1c;
+                }
+                </style>
+                """, unsafe_allow_html=True)
 
-            # --- Account Masterlist Logic ---
-            if sheet_name == "📋 Account Masterlist" and "Account Name" in df.columns:
-                selected_client = st.selectbox("Select a client", df["Account Name"].dropna().unique(), index=None)
+                # === Layout ===
+                col1, col2, col3 = st.columns([1.5, 0.5, 1])
 
-                if selected_client:
-                    # Get client data
-                    client_data = df[df["Account Name"] == selected_client].iloc[0]
+                # --- Column 1: Filter Label ---
+                with col1:
+                    st.markdown("#### 📅 Filter by Month")
+                    month_filter = "All"
+                    if "Month-Year" in df.columns:
+                        months = sorted(
+                            df["Month-Year"].dropna().unique(),
+                            key=lambda x: pd.to_datetime(x, format='%B %Y')
+                        )
+                        month_filter = st.selectbox("Select a month", ["All"] + months, key="month_filter_dropdown")
 
-                    # Display Revenue Breakdown for the selected client
-                    st.markdown(f"### 📊 Revenue Breakdown for {selected_client}")
-                    fig = px.bar(
-                        x=["Humble Revenue", "Supplier Revenue"],
-                        y=[client_data["Humble Revenue"], client_data["Supplier Revenue"]],
-                        labels={"x": "Revenue Type", "y": "Revenue (Amount)"},
-                        title=f"Revenue for {selected_client}",
-                        width=300,
-                        height=250
+                # === Date Preparation ===
+                if "Endorsement Date" in df.columns:
+                    df["Endorsement Date"] = pd.to_datetime(df["Endorsement Date"], errors='coerce')
+
+                # === Filter df for visualizations and metric counts ===
+                filtered_df = df.copy()
+                if month_filter != "All" and "Month-Year" in df.columns:
+                    filtered_df = df[df["Month-Year"] == month_filter]
+
+                # === Activated Account Count (based on selected month, count all rows) ===
+                if month_filter != "All":
+                    current_count = df[df["Month-Year"] == month_filter].shape[0]
+                else:
+                    current_count = df.shape[0]
+
+                # === Top Activation Month (by total rows, not unique) ===
+                top_month = df["Month-Year"].value_counts().idxmax() if "Month-Year" in df.columns else "N/A"
+                top_count = df["Month-Year"].value_counts().max() if "Month-Year" in df.columns else 0
+
+                if month_filter != "All":
+                    current_count = df[df["Month-Year"] == month_filter].shape[0]
+                    
+                    # Logic to get previous month and compare
+                    selected_month_datetime = pd.to_datetime(month_filter, format='%B %Y')
+                    previous_month_datetime = selected_month_datetime - pd.DateOffset(months=1)
+                    previous_month_str = previous_month_datetime.strftime('%B %Y')
+
+                    # Check if previous month data exists (from Feb onwards)
+                    if previous_month_str in df["Month-Year"].values:
+                        previous_count = df[df["Month-Year"] == previous_month_str].shape[0]
+
+                        # Calculate percentage change
+                        if previous_count > 0:
+                            percent_change = ((current_count - previous_count) / previous_count) * 100
+                            percent_change_str = f"{percent_change:.2f}%"
+                            growth_symbol = "🔼" if percent_change > 0 else "🔽"
+                            growth_color = "green" if percent_change > 0 else "red"
+                        else:
+                            percent_change_str = "N/A"
+                            growth_symbol = ""
+                            growth_color = "black"
+                    else:
+                        percent_change_str = None  # No previous month data (e.g., Jan 2025)
+                else:
+                    current_count = df.shape[0]
+                    percent_change_str = None  # Don't show percentage for "All"
+
+                # --- Column 2: Metric Cards (Interchanged Order) ---
+                with col2:
+                    st.markdown(f"""
+                    <div class='metric-card'>
+                        <img src='https://cdn-icons-png.flaticon.com/128/12458/12458553.png' width='35' style='margin-bottom:10px;opacity:0.7;'/>
+                        <div class='metric-title'>Top Activation Month</div>
+                        <div class='metric-value'>
+                            {top_month} 
+                            <span style='font-size:13px; color:green;'>{top_count} clients</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    if percent_change_str:
+                        percent_display = f"{'+' if percent_change > 0 else ''}{int(percent_change)}%"
+                        st.markdown(f"""
+                        <div class='metric-card'>
+                            <img src='https://cdn-icons-png.flaticon.com/128/3126/3126647.png' width='35' style='margin-bottom:10px;opacity:0.7;'/>
+                            <div class='metric-title'>Total Activated Accounts</div>
+                            <div class='metric-value'>{current_count}</div>
+                            <div class='metric-growth' style='color:{growth_color};'>{percent_display} vs last month</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"""
+                        <div class='metric-card'>
+                            <img src='https://cdn-icons-png.flaticon.com/128/3126/3126647.png' width='35' style='margin-bottom:10px;opacity:0.7;'/>
+                            <div class='metric-title'>Total Activated Accounts</div>
+                            <div class='metric-value'>{current_count}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                # --- Column 3: Pie Chart ---
+                with col3:
+                    if "Account Type" in df.columns:
+                        pie_df = df.copy()
+                        if month_filter != "All":
+                            pie_df = df[df["Month-Year"] == month_filter]
+
+                        account_counts = pie_df["Account Type"].dropna().value_counts().reset_index()
+                        account_counts.columns = ["Account Type", "Count"]
+
+                        fig1 = px.pie(account_counts, values="Count", names="Account Type", hole=0.3)
+                        fig1.update_traces(textposition='inside', textinfo='percent+label', textfont_size=12)
+                        fig1.update_layout(
+                            height=400,
+                            width=380,
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="white",
+                            margin=dict(t=60, b=20, l=10, r=10)
+                        )
+
+                        st.markdown("### 📊 Account Type Distribution")
+                        st.plotly_chart(fig1, use_container_width=False)
+                    else:
+                        st.warning("⚠️ 'Account Type' column not found in your dataset.")
+
+                # === COMBINED BAR CHART: Client Distribution by Account Type ===
+                df_filtered = df if month_filter == "All" else df[df["Month-Year"] == month_filter]
+
+                if "Account Name" in df_filtered.columns and "Account Type" in df_filtered.columns:
+                    df_filtered["Grouped Account"] = df_filtered["Account Name"].str.replace(
+                        r"(B\d+|Batch \d+| - [A-Za-z\s]+)", "", regex=True).str.strip()
+
+                    grouped_counts = df_filtered.groupby(["Grouped Account", "Account Type"]).size().reset_index(name="Count")
+
+                    fig2 = px.bar(
+                        grouped_counts,
+                        x="Grouped Account",
+                        y="Count",
+                        color="Account Type",
+                        barmode="stack",  # Or "group" for side-by-side bars
+                        text="Count",
+                        title=""
                     )
 
-                    fig.update_traces(texttemplate='%{y:.2f}%', textposition='outside', textfont_size=12)
-                    st.plotly_chart(fig, use_container_width=True)
+                    fig2.update_layout(
+                        height=450,
+                        margin=dict(t=20, b=10, l=10, r=10),
+                        xaxis_title="",
+                        yaxis_title="Number of Activations",
+                        xaxis_tickangle=-45,
+                        showlegend=True,
+                        plot_bgcolor="white",
+                        paper_bgcolor="rgba(0,0,0,0)"
+                    )
+                    fig2.update_traces(textposition='outside')
 
-                    with st.expander("📋 View Client Data"):
-                        st.dataframe(client_data.to_frame().T, use_container_width=True)
+                    st.markdown(f"""
+                        <div style='margin-bottom: -1rem;'>
+                            <h4 style='margin-bottom: 0.2rem;'>📈 Client Distribution by Account Type</h4>
+                            <p style='font-size: 14px; color: #888; margin-top: 0;'>{month_filter} Clients</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    st.plotly_chart(fig2, use_container_width=True)
+
                 else:
-                    st.warning("Please select a valid client.")
+                    st.warning("⚠️ 'Account Name' and/or 'Account Type' column not found in your dataset.")
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#     guide_text = {
-#         "📦 Supplier Progress Tracker": "Shows activated clients and key deal tracking info.",
-#         "📋 Account Masterlist": "Central list of accounts with metadata, status, and tags.",
-#         "🧩 Prospects": """
-# 📑 **Inbound Scheduler** — for managing inbound, QC, and ocular requests.
 
-# - Add requests to this sheet.
-# - Tentative = soft reserve, Confirming = hard reserve.
-# - You can add accounts without a date—they won’t show unless all schedule fields are filled.
+            if sheet_name == "📋 Account Masterlist" and "Account Name" in df.columns:
+                selected_client = st.selectbox("Select a client", df["Account Name"].dropna().unique(), index=None, key="client_selector")
 
-# ✅ If confirmed:
-# 1. Fill this [request form](https://docs.google.com/forms/u/0/d/e/1FAIpQLSe9fH7ZaeUu6D3ns960L8e26lAKJg67d0Xbkw6Bt58UlMTcVQ/formResponse)
-# 2. Or notify SC, then remove the row once confirmed.
-# """
-#     }
+                if selected_client:
+                    client_data = df[df["Account Name"] == selected_client].iloc[0]
 
+                    deal_status_raw = str(client_data.get("Deal Status", "")).strip().lower()
+
+                    # Display the badge only for open/closed deals
+                    if deal_status_raw == "open":
+                        badge_label = "OPEN DEAL"
+                        badge_color = "#2ecc71"  # green
+                    elif deal_status_raw == "closed":
+                        badge_label = "CLOSED DEAL"
+                        badge_color = "#e74c3c"  # red
+                    else:
+                        badge_label = None
+                        badge_color = None
+
+                    # Render badge only if defined
+                    if badge_label and badge_color:
+                        st.markdown(f"""
+                        <div style='
+                            display: inline-block;
+                            background-color:{badge_color};
+                            color:white;
+                            padding:10px 20px;
+                            border-radius:40px;
+                            font-size:18px;
+                            font-weight:600;
+                            margin-bottom: 10px;
+                        '>
+                            {badge_label}
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    # --- Layout: Two Columns ---
+                    col1, col2 = st.columns([1, 1])
+
+                    with col1:
+                        st.markdown(f"#### 📊 Revenue Breakdown for {selected_client}")
+                        fig_bar = px.bar(
+                            x=["Humble Revenue", "Supplier Revenue"],
+                            y=[client_data["Humble Revenue"], client_data["Supplier Revenue"]],
+                            labels={"x": "Revenue Type", "y": "Revenue (Amount)"},
+                            width=250,
+                            height=220
+                        )
+                        fig_bar.update_traces(
+                            texttemplate='%{y:.2f}',
+                            textposition='outside',
+                            textfont_size=11,
+                            marker=dict(line=dict(width=1), color='#1f77b4'),
+                            width=0.3  # <--- controls bar width (lower = thinner)
+                        )
+                        fig_bar.update_layout(margin=dict(l=10, r=10, t=40, b=10))
+                        st.plotly_chart(fig_bar, use_container_width=True)
+
+                    with col2:
+                        st.markdown("")
+
+                    # --- View Detailed Client Row ---
+                    with st.expander("📋 View Client Data"):
+                        st.dataframe(
+                            df[df["Account Name"] == selected_client].reset_index(drop=True),
+                            use_container_width=True
+                        )
+                else:
+                    st.warning("Please select a valid client.")
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
             if sheet_name == "🧩 Prospects":
-                # Convert 'Planned Date' to datetime for filtering
+                st.markdown("### Inbound Schedule Tracker")
+
+                # --- Date Parsing ---
                 df["Planned Date (Raw)"] = pd.to_datetime(df["Planned Date"], errors="coerce")
-
-                # Create a display-friendly version of the date
                 df["Planned Date"] = df["Planned Date (Raw)"].dt.strftime("%B %d, %Y")
+                df["Planned Month"] = df["Planned Date (Raw)"].dt.strftime("%B %Y")
+                df["Month Sort"] = df["Planned Date (Raw)"].dt.to_period("M")
 
-                # Dropdown for week filtering
-                date_filter = st.selectbox("📆 Filter by Schedule Timing", ["Past Week", "This Week", "Next Week"])
+                # --- Month Dropdown ---
+                month_options = df.sort_values("Month Sort")["Planned Month"].dropna().unique().tolist()
+                month_options.insert(0, "All")
 
-                # Today's date
+                # Get current month string (e.g. "April 2025")
+                current_month_str = pd.Timestamp.today().strftime("%B %Y")
+
+                # Set default index: if current month is in the list, use it, else fallback to index 0
+                default_month_index = month_options.index(current_month_str) if current_month_str in month_options else 0
+
+                # Month selector
+                selected_month = st.selectbox(
+                    "📆 Filter by Month",
+                    month_options,
+                    index=default_month_index,
+                    key="month_filter_dropdown_prospects"
+                )
+                # --- Week Radio Filter (Horizontal, No "All") ---
+                selected_week = st.radio(
+                    "🗓️ Filter by Week",
+                    ["Past Week", "This Week", "Next Week"],
+                    key="week_filter_radio",
+                    horizontal=True
+                )
+
+                # --- Filter by Month ---
+                if selected_month == "All":
+                    filtered_df = df.copy()
+                else:
+                    filtered_df = df[df["Planned Month"] == selected_month].copy()
+
+                # --- Filter by Week ---
                 today = pd.Timestamp.today().normalize()
-
-                # Filter logic
-                if date_filter == "Past Week":
+                if selected_week == "Past Week":
                     start_date = today - pd.Timedelta(days=today.weekday() + 7)
                     end_date = today - pd.Timedelta(days=today.weekday() + 1)
-                elif date_filter == "This Week":
+                elif selected_week == "This Week":
                     start_date = today - pd.Timedelta(days=today.weekday())
                     end_date = start_date + pd.Timedelta(days=6)
-                elif date_filter == "Next Week":
+                elif selected_week == "Next Week":
                     start_date = today + pd.Timedelta(days=(7 - today.weekday()))
                     end_date = start_date + pd.Timedelta(days=6)
 
-                # Apply filter using the raw datetime column
-                filtered_df = df[(df["Planned Date (Raw)"] >= start_date) & (df["Planned Date (Raw)"] <= end_date)]
+                # Apply Week Filter
+                filtered_df = filtered_df[
+                    (filtered_df["Planned Date (Raw)"] >= start_date) & (filtered_df["Planned Date (Raw)"] <= end_date)
+                ]
 
-                # Output section
+                # --- Output Table ---
                 st.markdown("### 📋 Inbound Schedule")
                 if not filtered_df.empty:
                     st.dataframe(
@@ -646,9 +884,9 @@ if page == "Control Tower":
                         use_container_width=True
                     )
                 else:
-                    st.warning("No scheduled accounts in this time range.")
+                    st.warning("⚠️ No scheduled accounts for the selected filters.")
 
-                # Embedded WH Schedule Viewer
+                # --- Embedded Schedule Viewer ---
                 with st.expander("📅 View Full Warehouse Schedule"):
                     st.markdown("""
                     <div style="overflow: auto; width: 100%;">
@@ -658,77 +896,49 @@ if page == "Control Tower":
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
+# DATAFRAME --------------------------------------------------------------------------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            # --- Final Table (Full Sheet Data) --- Displayed at the bottom after all content
+            if sheet_name == "📦 Supplier Progress Tracker":
+                st.markdown("### 📋 Full Sheet Data")
+                st.dataframe(df, use_container_width=True)
 
-            # --- Final Table (Full Sheet Data)
-            if sheet_name in ["📦 Supplier Progress Tracker", "📋 Account Masterlist"]:
-                st.markdown("### 📋 Full Sheet Data (Styled)")
+            elif sheet_name == "📋 Account Masterlist":
+                st.markdown("### 📄 Full Sheet Data")
 
-                df_cleaned = df.dropna(subset=["Account Name", "Account Type"])
+                if "Inbound Report" in df.columns:
+                    # Filter: Exclude rows that are all empty except for Inbound Report = FALSE
+                    def keep_row(row):
+                        inbound = str(row.get("Inbound Report", "")).strip().lower()
+                        other_data = row.drop(labels=["Inbound Report"]).astype(str).str.strip()
+                        return inbound != "false" or any(other_data)
 
-                # Shorten and linkify Google Drive links
-                if "Google Drive Folder Link" in df_cleaned.columns:
-                    df_cleaned["Google Drive Folder Link"] = df_cleaned["Google Drive Folder Link"].apply(
-                        lambda url: f"[Open Folder]({url})" if pd.notna(url) and "http" in url else ""
-                    )
+                    filtered_df = df[df.apply(keep_row, axis=1)].copy()
 
-                # Define JS badge renderer for Initial Deal Type
-                deal_color_renderer = JsCode("""
-                function(params) {
-                    let status = params.value;
-                    let color = {
-                        'Closed Deal': '#b7eb8f',
-                        'Open Deal': '#ffe58f',
-                        'Ongoing': '#e6f7ff',
-                        'Pending': '#fff1b8'
-                    }[status] || '#d9d9d9';
+                    # Replace TRUE/FALSE with ✅ / ⬜ in display
+                    def render_checkbox(val):
+                        val = str(val).strip().lower()
+                        if val == "true":
+                            return "✅"
+                        elif val == "false":
+                            return "⬜"
+                        else:
+                            return ""
 
-                    let textColor = {
-                        'Closed Deal': '#389e0d',
-                        'Open Deal': '#d48806',
-                        'Ongoing': '#1890ff',
-                        'Pending': '#ad8b00'
-                    }[status] || '#595959';
+                    if not filtered_df.empty:
+                        if "Inbound Report" in filtered_df.columns:
+                            filtered_df["Inbound Report"] = filtered_df["Inbound Report"].apply(render_checkbox)
+                        st.dataframe(filtered_df.reset_index(drop=True), use_container_width=True)
+                    else:
+                        st.info("✅ No entries found after filtering.")
+                else:
+                    st.error("⚠️ 'Inbound Report' column not found in the sheet.")
 
-                    return `<span style="
-                        background-color: ${color};
-                        color: ${textColor};
-                        padding: 4px 10px;
-                        border-radius: 12px;
-                        font-weight: 600;
-                        font-size: 13px;
-                        font-family: 'Nunito Sans', sans-serif';
-                    ">${status}</span>`;
-                }
-                """)
-
-                # ✅ Create the GridOptionsBuilder *first*
-                gb = GridOptionsBuilder.from_dataframe(df_cleaned)
-
-                # ✅ Configure column styling if it exists
-                if "Initial Deal Type" in df_cleaned.columns:
-                    gb.configure_column("Initial Deal Type", cellRenderer=deal_color_renderer)
-
-                # Optional defaults
-                gb.configure_default_column(resizable=True, filter=True)
-                gridOptions = gb.build()
-
-                # ✅ Render the table
-                AgGrid(
-                    df_cleaned,
-                    gridOptions=gridOptions,
-                    allow_unsafe_jscode=True,
-                    height=450,
-                    fit_columns_on_grid_load=True,
-                    theme="streamlit"
-                )
-
-# INVENTORY DASHBOARD PAGE --------------------------------------------------------------------------------------------------------------------------------------------------
+# INVENTORY CONNECTION --------------------------------------------------------------------------------------------------------------------------------------------
 
 @st.cache_data(ttl=60)
 def get_inventory_data():
-    credentials_path = "inventory-dashboard-455009-3bee6b1a5b56.json"
+    credentials_path = "inventory-dashboard-455009-887625f925f2.json"
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
     gc = gspread.authorize(credentials)
@@ -741,19 +951,24 @@ def get_inventory_data():
     if not data:
         return pd.DataFrame()
 
-    headers = data[0]
-    df_data = data[1:]
+    raw_headers = data[1]
+    headers = []
+    seen = set()
+    for h in raw_headers:
+        h_clean = h.strip()
+        if h_clean == "" or h_clean in seen:
+            continue
+        headers.append(h_clean)
+        seen.add(h_clean)
 
-    # Convert to DataFrame
+    df_data = [row[:len(headers)] for row in data[2:]]  # Trim each row to header length
+
     df = pd.DataFrame(df_data, columns=headers)
+    df = df[df["Client"].str.strip() != ""]  # Safe fallback filter
 
-    # Clean blank rows: keep only rows where key fields are not empty
-    df = df[df["Availability"].str.strip() != ""]  # Use another column like "Client" if preferred
-
-    # Reset index
     df = df.reset_index(drop=True)
-
     return df
+
 
 def preprocess_inventory_data(df):
     currency_columns = ["Unit Price", "Total Price", "Total Sold"]
@@ -776,28 +991,55 @@ def preprocess_inventory_data(df):
 
     return df
 
+# INVENTORY DASHBOARD --------------------------------------------------------------------------------------------------------------------------------------------
+
 
 if page == "Inventory Dashboard":
     df_raw = get_inventory_data()
     df = preprocess_inventory_data(df_raw)
 
-    st.title("## 📦 2025 Inventory Dashboard")
+    st.title("2025 Inventory Dashboard")
+
+    st.markdown("""
+    <style>
+    .metric-card {
+        background: linear-gradient(90deg, #fff0ff, #cfdafd);
+        border-radius: 20px;
+        padding: 1.2rem 1.2rem 0.5rem 1.2rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        height: 162px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;     /* Bottom vertical alignment */
+        align-items: flex-start;       /* Left horizontal alignment */
+        border-left: 6px solid #605399;
+        transition: all 0.25s ease;
+        text-align: left;
+        max-width: 188px;
+        width: 100%;
+        margin: 0 auto 1rem auto;
+    }
+    .metric-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
     # --- Metric Card Function ---
-    def metric_card(title, value, suffix=""):
+    def metric_card(title, value, icon_url, suffix="", value_color="#1c1c1c"):
         st.markdown(f"""
-            <div style='display:flex;align-items:center;background:#ffffff;
-                border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);
-                padding:20px 25px;margin-bottom:10px;border-left:6px solid #e06163;
-                transition: all 0.3s ease;'>
-                <div>
-                    <div style='margin-bottom:5px;font-size:15px;color:#444;font-weight:500;'>{title}</div>
-                    <div style='font-size:28px;font-weight:700;color:#1e3932;line-height:1.2;'>{value} {suffix}</div>
+            <div class="metric-card">
+                <div style="margin-bottom: 10px;">
+                    <img src="{icon_url}" width="32" style="opacity: 0.6;" />
                 </div>
+                <div style='color: #555; font-weight: 550; font-size: 13px; margin-bottom: 3px;'>{title}</div>
+                <div style='font-size: 28px; font-weight: 750; color: {value_color};'>{value} {suffix}</div>
             </div>
         """, unsafe_allow_html=True)
 
-    # --- Client Filter Logic ---
+        # --- Client Filter Logic ---
     client_options = sorted(df["Client"].unique())
     selected_client = st.selectbox("🔍 Choose Client for Detailed View", ["All"] + client_options)
 
@@ -807,7 +1049,7 @@ if page == "Inventory Dashboard":
     # --- Metrics Calculation ---
     def compute_metrics(dataframe):
         return {
-            "total_skus": dataframe.shape[0],
+            "total_items": dataframe.shape[0],
             "total_sales": dataframe["Total Sold"].sum(),
             "avg_sales_cycle": dataframe["Sales Cycle"].mean(),
             "total_on_hand": dataframe["On Hand Qty"].sum(),
@@ -818,38 +1060,38 @@ if page == "Inventory Dashboard":
     client_metrics = compute_metrics(filtered_df)
 
     # --- Tab Layout ---
-    tab1, tab2 = st.tabs(["📊 Overview", "👤 Per Client"])
+    tab1, tab2 = st.tabs(["📊 Inventory Overview", "👤 Inventory Per Client"])
 
     # 📊 OVERVIEW TAB
     with tab1:
-        st.markdown("### 📦 Inventory Summary (All Clients)")
-        col1, col2, col3, col4, col5 = st.columns(5)
+        st.markdown("### Inventory Summary")
+        spacer1, col1, col2, col3, col4, col5, spacer2 = st.columns([0.2, 0.6, 0.6, 0.6, 0.6, 0.6, 0.2])
         with col1:
-            metric_card("📦 Total SKUs", overview_metrics["total_skus"])
+            metric_card("Total Items", overview_metrics["total_items"], "https://cdn-icons-png.flaticon.com/128/504/504528.png")
         with col2:
-            metric_card("💸 Total Sales", f"₱{overview_metrics['total_sales']:,.2f}")
+            metric_card("Total Sales", f"₱{overview_metrics['total_sales']:,.0f}", "https://cdn-icons-png.flaticon.com/128/3367/3367562.png", "", "#b94e34")
         with col3:
-            metric_card("⏱️ Avg Sales Cycle", f"{overview_metrics['avg_sales_cycle']:.1f}", "days")
+            metric_card("Avg Sales Cycle", f"{overview_metrics['avg_sales_cycle']:.1f}", "https://cdn-icons-png.flaticon.com/128/9148/9148972.png", "days")
         with col4:
-            metric_card("📍 On Hand", overview_metrics["total_on_hand"])
+            metric_card("On Hand", overview_metrics["total_on_hand"], "https://cdn-icons-png.flaticon.com/128/7480/7480113.png")
         with col5:
-            metric_card("🛒 Qty Sold", overview_metrics["total_qty_sold"])
+            metric_card("Qty Sold", overview_metrics["total_qty_sold"], "https://cdn-icons-png.flaticon.com/128/15554/15554788.png")
 
     # 👤 CLIENT TAB
     with tab2:
-        st.markdown(f"### 👤 Inventory Summary - `{selected_client}`" if selected_client != "All" else "### 👤 Select a Client")
+        st.markdown(f"### Inventory Summary - `{selected_client}`" if selected_client != "All" else "### 👤 Select a Client")
         if selected_client != "All":
-            col1, col2, col3, col4, col5 = st.columns(5)
+            spacer1, col1, col2, col3, col4, col5, spacer2 = st.columns([0.2, 0.6, 0.6, 0.6, 0.6, 0.6, 0.2])
             with col1:
-                metric_card("📦 Total SKUs", client_metrics["total_skus"])
+                metric_card("Total Items", client_metrics["total_items"], "https://cdn-icons-png.flaticon.com/128/504/504528.png")
             with col2:
-                metric_card("💸 Total Sales", f"₱{client_metrics['total_sales']:,.2f}")
+                metric_card("Total Sales", f"₱{client_metrics['total_sales']:,.2f}", "https://cdn-icons-png.flaticon.com/128/3367/3367562.png", "", "#e74c3c")
             with col3:
-                metric_card("⏱️ Avg Sales Cycle", f"{client_metrics['avg_sales_cycle']:.1f}", "days")
+                metric_card("Avg Sales Cycle", f"{client_metrics['avg_sales_cycle']:.1f}", "https://cdn-icons-png.flaticon.com/128/9148/9148972.png", "days")
             with col4:
-                metric_card("📍 On Hand", client_metrics["total_on_hand"])
+                metric_card("On Hand", client_metrics["total_on_hand"], "https://cdn-icons-png.flaticon.com/128/7480/7480113.png")
             with col5:
-                metric_card("🛒 Qty Sold", client_metrics["total_qty_sold"])
+                metric_card("Qty Sold", client_metrics["total_qty_sold"], "https://cdn-icons-png.flaticon.com/128/15554/15554788.png")
         else:
             st.info("Select a specific client from the dropdown above to view detailed metrics.")
 
@@ -867,7 +1109,7 @@ if page == "Inventory Dashboard":
             names="Availability",
             values="Count",
             title="",
-            height=280  # Smaller height
+            height=280
         )
         st.plotly_chart(fig_avail, use_container_width=True)
 
@@ -878,8 +1120,8 @@ if page == "Inventory Dashboard":
         fig_trend = px.line(sales_by_month, x="Month", y="Total Sold", title="", markers=True, height=280)
         st.plotly_chart(fig_trend, use_container_width=True)
 
-    # --- Row 2: Client Summary (Full Width or Shared) ---
-    col3, col4 = st.columns([1, 1])  # You can change this to [1] if you want full width
+    # --- Row 2: Client Summary + Highest Inventory Month ---
+    col3, col4 = st.columns([1, 1])
 
     with col3:
         st.markdown("#### 👥 Client-Based Summary")
@@ -899,14 +1141,141 @@ if page == "Inventory Dashboard":
         )
         st.plotly_chart(fig_client, use_container_width=True)
 
-    # Optional: col4 can remain empty, or you can add another visual
     with col4:
-        st.empty()
-    # --- Outlier Detection: Slow Movers ---
-    # st.subheader("🧊 Slow-Moving Inventory")
-    # slow_movers = df[df["Sales Cycle"] > df["Sales Cycle"].mean() + df["Sales Cycle"].std()]
-    #st.dataframe(slow_movers, use_container_width=True)
+        st.markdown("#### 🏆 Highest Inventory Month")
+
+        inventory_by_month = filtered_df.copy()
+        inventory_by_month["Month"] = inventory_by_month["Date Inbounded"].dt.to_period("M").astype(str)
+        monthly_inventory = inventory_by_month.groupby("Month")["On Hand Qty"].sum().reset_index()
+
+        highest_month = monthly_inventory.loc[monthly_inventory["On Hand Qty"].idxmax()]
+        highlight_color = "#605399"
+
+        fig_inv = px.bar(
+            monthly_inventory.sort_values("On Hand Qty", ascending=True),
+            x="On Hand Qty",
+            y="Month",
+            orientation="h",
+            title="",
+            height=280
+        )
+        fig_inv.update_traces(marker_color=[
+            highlight_color if m == highest_month["Month"] else "#dcdcdc"
+            for m in monthly_inventory["Month"]
+        ])
+        fig_inv.update_layout(
+            showlegend=False,
+            margin=dict(t=20),
+        )
+
+        st.plotly_chart(fig_inv, use_container_width=True)
+        st.caption(f"📦 **{highest_month['Month']}** had the highest inventory: **{int(highest_month['On Hand Qty']):,} units**")
 
     # --- Full Table ---
     st.subheader("📋 Inventory Table")
     st.dataframe(filtered_df, use_container_width=True)
+
+# INBOUNDS CONNECTION --------------------------------------------------------------------------------------------------------------------------------------------
+
+@st.cache_data(ttl=60)
+def get_inventory_data():
+    credentials_path = "inbounds-dashboard-0d48bc43c7e4.json"
+    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+    gc = gspread.authorize(credentials)
+
+    spreadsheet_id = "1C13KdQDIssPB02vWd-ma2t6yWDpiIDB28e7dkc2M-vc"
+    sh = gc.open_by_key(spreadsheet_id)
+    worksheet = sh.get_worksheet(1)
+    data = worksheet.get_all_values()
+
+    if not data:
+        return pd.DataFrame()
+
+    # 🔧 Correct header row
+    raw_headers = data[0]
+    headers = [h.strip() for h in raw_headers if h.strip() != ""]
+
+    # 🔧 Start from row 1 (data rows)
+    df_data = [row[:len(headers)] for row in data[1:] if any(cell.strip() for cell in row)]
+
+    df = pd.DataFrame(df_data, columns=headers)
+
+    numeric_columns = ["QTY"]
+    for col in numeric_columns:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    return df.reset_index(drop=True)
+
+if page == "Inbounds Dashboard":
+    df_raw = get_inventory_data()
+    # If you have a function like preprocess_inventory_data, call it here
+    # df = preprocess_inventory_data(df_raw)
+    df = df_raw  # Placeholder
+    st.title("Inbounds Dashboard")
+    st.dataframe(df, use_container_width=True)
+
+# OUTBOUNDS CONNECTION --------------------------------------------------------------------------------------------------------------------------------------------
+
+@st.cache_data(ttl=60)
+def get_outbounds_dashboard_data(sheet_index=0):
+    credentials_path = "outbounds-dashboard-856b41a4ec59.json"
+    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+    gc = gspread.authorize(credentials)
+
+    spreadsheet_id = "1Md7tsA-oFNrqGbcbSFkOiWprUFh6hZKxTuP0edarfTU"
+    sh = gc.open_by_key(spreadsheet_id)
+    worksheet = sh.get_worksheet(sheet_index)
+    data = worksheet.get_all_values()
+
+    if not data:
+        return pd.DataFrame()
+
+    header_row_index = 0  # Correct: headers are in row 1 (0-indexed)
+    headers = data[header_row_index]
+    df_data = data[header_row_index + 1:]
+
+    df = pd.DataFrame(df_data, columns=headers)
+    df = df.dropna(how="all", axis=0)
+    df = df.dropna(how="all", axis=1)
+
+    return df
+
+def preprocess_inventory_data(df):
+    currency_columns = ["Unit Price", "Total Price", "Total Sold"]
+    for col in currency_columns:
+        if col in df.columns:  # ✅ Only process if column exists
+            df[col] = (
+                df[col]
+                .str.replace("₱", "", regex=False)
+                .str.replace(",", "", regex=False)
+                .replace("", "0")  # Replace empty strings
+                .astype(float)
+            )
+
+    date_columns = ["Date Inbounded", "Date Sold"]
+    for col in date_columns:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
+
+    numeric_columns = ["Sales Cycle", "On Hand Qty", "Qty Sold"]
+    for col in numeric_columns:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+
+    return df
+
+# OUTBOUNDS DASHBOARD --------------------------------------------------------------------------------------------------------------------------------------------
+
+if page == "Outbounds Dashboard":
+    df_raw = get_outbounds_dashboard_data()
+    try:
+        df = preprocess_inventory_data(df_raw)
+    except KeyError as e:
+        st.error(f"Missing expected column: {e}")
+        df = df_raw
+
+    st.title("Outbounds Dashboard")
+    st.dataframe(df, use_container_width=True)
