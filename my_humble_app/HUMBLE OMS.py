@@ -917,14 +917,16 @@ def get_inventory_data():
 
 
 def preprocess_inventory_data(df):
-    numeric_cols = [
-        "Buy Price", "Total Buy Price", "Selling Price", "Total Selling Price",
-        "Qty Sold", "On Hand Qty", "Total Sold", "Profit", "Profit Margin"
-    ]
-
-    for col in numeric_cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col].astype(str).str.replace("₱", "").str.replace(",", "").str.strip(), errors='coerce').fillna(0)
+    currency_columns = ["Buy Price", "Total Buy Price", "Selling Price", "Total Selling Price", "Total Sold"]
+    for col in currency_columns:
+        df[col] = (
+            df[col]
+            .astype(str)
+            .str.replace("₱", "", regex=False)
+            .str.replace(",", "", regex=False)
+            .replace(["", "#VALUE!", "N/A", "nan"], "0")  # Add all known invalids
+            .astype(float)
+        )
 
     date_columns = ["Date Inbounded", "Date Sold"]
     for col in date_columns:
@@ -1381,15 +1383,6 @@ if page == "Inventory Dashboard":
 
         sheet_url = st.text_input("Paste the Google Sheet URL of the PIF")
 
-        def clean_numeric_column(series):
-            return pd.to_numeric(
-                series.astype(str)
-                .str.replace("₱", "", regex=False)
-                .str.replace(",", "", regex=False)
-                .str.strip(),
-                errors="coerce"
-            ).fillna(0)
-
         if sheet_url:
             try:
                 match = re.search(r"/spreadsheets/d/([a-zA-Z0-9-_]+)", sheet_url)
@@ -1411,16 +1404,15 @@ if page == "Inventory Dashboard":
                     seen = set()
                     for h in raw_header_row:
                         h_clean = h.strip()
-                        headers.append(h_clean if h_clean and h_clean not in seen else f"Unnamed_{len(headers)}")
-                        seen.add(h_clean)
+                        if h_clean == "" or h_clean in seen:
+                            headers.append(f"Unnamed_{len(headers)}")
+                        else:
+                            headers.append(h_clean)
+                            seen.add(h_clean)
 
                     data_rows = [row[2:2+len(headers)] for row in inbound_raw[6:] if any(row[2:])]
                     inbound_df = pd.DataFrame(data_rows, columns=headers)
 
-                    # Clean column names and strip whitespace
-                    inbound_df.columns = inbound_df.columns.str.strip().str.replace("\n", " ").str.replace(r"\s+", " ", regex=True)
-
-                    # Filter non-empty SKU/Product rows
                     inbound_df = inbound_df[
                         (inbound_df["Humble SKU"].astype(str).str.strip() != "") &
                         (inbound_df["Product Name"].astype(str).str.strip() != "")
@@ -1432,32 +1424,27 @@ if page == "Inventory Dashboard":
                         parsed_date = pd.to_datetime(date_received, errors="coerce")
                         date_str = parsed_date.strftime("%-m/%-d/%y") if not pd.isna(parsed_date) else ""
                         month_str = parsed_date.strftime("%b") if not pd.isna(parsed_date) else ""
-                        yy_mmm_str = parsed_date.strftime("%Y %b") if not pd.isna(parsed_date) else ""
                         num_valid_rows = len(inbound_df)
 
-                        # Clean numeric fields
-                        inbound_df["Actual Quantity"] = clean_numeric_column(inbound_df["Actual Quantity"])
-                        inbound_df["Unit Offer Price"] = clean_numeric_column(inbound_df["Unit Offer Price"])
-                        inbound_df["Unit Valuation"] = clean_numeric_column(inbound_df["Unit Valuation"])
-                        inbound_df["Total Offer Price"] = clean_numeric_column(inbound_df["Total Offer Price"])
-                        inbound_df["Total Valuation"] = clean_numeric_column(inbound_df["Total Valuation"])
-
-                        # Process only needed columns
                         processed = pd.DataFrame({
                             "Client": [client_name] * num_valid_rows,
                             "HUMBLE SKU": inbound_df["Humble SKU"],
                             "Description": inbound_df["Product Name"],
                             "Inbounded Qty": inbound_df["Actual Quantity"],
-                            "On Hand Qty": inbound_df["Actual Quantity"],
+                            "On Hand Qty": "",
+                            "Qty Sold": "",
                             "Buy Price": inbound_df["Unit Offer Price"],
                             "Total Buy Price": inbound_df["Total Offer Price"],
-                            "Selling Price": inbound_df["Unit Valuation"],
-                            "Total Selling Price": inbound_df["Total Valuation"],
+                            "Total Sold": "",
                             "Availability": ["On Hand"] * num_valid_rows,
+                            "Date": [month_str] * num_valid_rows,
                             "Date Inbounded": [date_str] * num_valid_rows,
+                            "Date Sold": "",
+                            "Inventory Age": "",
+                            "Sales Cycle": ""
                         })
 
-                        st.success("✅ Preview: Inbounds ready to append")
+                        st.success(" Preview: Inbounds ready to append")
                         st.dataframe(processed)
 
                         if st.button("Append to Inventory Backend"):
@@ -1476,27 +1463,9 @@ if page == "Inventory Dashboard":
                             if first_empty_row is None:
                                 first_empty_row = len(existing_values) + 1
 
-                            # Map processed columns to specific columns in the sheet
-                            column_map = {
-                                "Client": "A",
-                                "HUMBLE SKU": "B",
-                                "Description": "C",
-                                "Inbounded Qty": "D",
-                                "On Hand Qty": "E",
-                                "Buy Price": "G",
-                                "Total Buy Price": "H",
-                                "Selling Price": "I",
-                                "Total Selling Price": "J",
-                                "Availability": "M",
-                                "Date Inbounded": "O"
-                            }
-
-                            for col_name, col_letter in column_map.items():
-                                cell_range = f"{col_letter}{first_empty_row}:{col_letter}{first_empty_row + num_valid_rows - 1}"
-                                values = processed[col_name].values.reshape(-1, 1).tolist()
-                                inventory_ws.update(cell_range, values, value_input_option="USER_ENTERED")
-
-                            st.success(f"✅ Successfully added {num_valid_rows} rows to Inventory Sheet!")
+                            target_range = f"A{first_empty_row}"
+                            inventory_ws.update(target_range, processed.values.tolist(), value_input_option="USER_ENTERED")
+                            st.success(f"✅ Successfully added {len(processed)} rows to Inventory Sheet!")
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
@@ -1552,20 +1521,15 @@ if page == "Inventory Dashboard":
                 row_number = df_inventory[
                     (df_inventory["Client"] == selected_client) &
                     (df_inventory["Description"] == selected_desc) &
-                    (df_inventory["Total Buy Price"] == selected_price)
+                    (df_inventory["Total Price"] == selected_price)
                 ].index[0] + 3
 
-                inventory_ws.update(f"E{row_number}", [[new_on_hand]])           # On Hand Qty
-                inventory_ws.update(f"F{row_number}", [[new_qty_sold]])          # Qty Sold
-                inventory_ws.update(f"K{row_number}", [[computed_total_sold]])   # Total Sold
-
-                # Optional: compute Profit = Total Sold - Total Buy Price
-                buy_price = safe_float(final_row["Total Buy Price"])
-                profit = computed_total_sold - buy_price
-                inventory_ws.update(f"L{row_number}", [[profit]])                # Profit
+                inventory_ws.update(f"E{row_number}", [[new_on_hand]])
+                inventory_ws.update(f"F{row_number}", [[new_qty_sold]])
+                inventory_ws.update(f"I{row_number}", [[computed_total_sold]])
 
                 if new_on_hand == 0:
-                    inventory_ws.update(f"M{row_number}", [["Sold"]])            # Availability
+                    inventory_ws.update(f"J{row_number}", [["Sold"]])
 
                 st.success("Inventory row updated successfully.")
 
