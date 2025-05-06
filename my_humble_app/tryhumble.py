@@ -25,7 +25,7 @@ import re
 st.set_page_config(page_title="Humble OMS Login", layout="wide", initial_sidebar_state="expanded")
 
 # ✅ GLOBAL Google Sheets API credentials (shared across all logic)
-credentials_path = "inventory-dashboard-455009-887625f925f2.json"
+credentials_path = "inventory-dashboard-455009-55fd550abb75.json"
 scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
 gc = gspread.authorize(credentials)
@@ -282,7 +282,7 @@ with st.sidebar:
 
 @st.cache_data(ttl=60)
 def get_control_tower_data(sheet_index=0):
-    credentials_path = "control-tower-454909-57be7bcbb0a5.json"
+    credentials_path = "control-tower-454909-57dd2ea0f2bc.json"
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
     gc = gspread.authorize(credentials)
@@ -884,7 +884,7 @@ if page == "Control Tower":
 
 @st.cache_data(ttl=60)
 def get_inventory_data():
-    credentials_path = "inventory-dashboard-455009-887625f925f2.json"
+    credentials_path = "inventory-dashboard-455009-55fd550abb75.json"
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
     gc = gspread.authorize(credentials)
@@ -1576,7 +1576,7 @@ if page == "Inventory Dashboard":
 
 @st.cache_data(ttl=60)
 def get_inventory_data():
-    credentials_path = "inbounds-dashboard-0d48bc43c7e4.json"
+    credentials_path = "inbounds-dashboard-7bbf8f7a4f59.json"
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
     gc = gspread.authorize(credentials)
@@ -2463,7 +2463,7 @@ if page == "Inbounds Dashboard":
 
 @st.cache_data(ttl=60)
 def get_outbounds_dashboard_data(sheet_index=0):
-    credentials_path = "outbounds-dashboard-856b41a4ec59.json"
+    credentials_path = "outbounds-dashboard-b4e9901c3361.json"
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
     gc = gspread.authorize(credentials)
@@ -2489,20 +2489,20 @@ def get_outbounds_dashboard_data(sheet_index=0):
 # 2. Preprocess Data
 # -----------------------------------------------
 def preprocess_outbound_data(df):
-    if "Price" in df.columns:
-        df["Price"] = df["Price"].str.replace("\u20b1", "", regex=False).str.replace(",", "", regex=False).replace("", "0").astype(float)
+    if "PRICE" in df.columns:
+        df["PRICE"] = df["PRICE"].str.replace("\u20b1", "", regex=False).str.replace(",", "", regex=False).replace("", "0").astype(float)
 
     if "QTY" in df.columns:
         df["QTY"] = pd.to_numeric(df["QTY"], errors='coerce').fillna(0).astype(int)
 
-    if "Weight" in df.columns:
-        df["Weight"] = pd.to_numeric(df["Weight"], errors='coerce').fillna(0).astype(float)
+    if "WEIGHT" in df.columns:
+        df["WEIGHT"] = pd.to_numeric(df["WEIGHT"], errors='coerce').fillna(0).astype(float)
 
-    if "Pullout Date" in df.columns:
-        df["Pullout Date"] = pd.to_datetime(df["Pullout Date"], errors='coerce')
-        df["Month_Year"] = df["Pullout Date"].dt.strftime('%b %Y')
+    if "PULLOUT DATE" in df.columns:
+        df["PULLOUT DATE"] = pd.to_datetime(df["PULLOUT DATE"], errors='coerce')
+        df["MONTH_YEAR"] = df["PULLOUT DATE"].dt.strftime('%b %Y')
 
-    df["Total Value"] = df["QTY"] * df["Price"]
+    df["TOTAL VALUE"] = df["QTY"] * df["PRICE"]
 
     return df.reset_index(drop=True)
 
@@ -3007,7 +3007,7 @@ if page == "Outbounds Dashboard":
 # GSheets Setup
 @st.cache_data(ttl=300)
 def load_faq_from_gsheets():
-    credentials_path = "humblesustainability-systems-a8e3639e06a1.json"
+    credentials_path = "humblesustainability-systems-2517c09a5a25.json"
     if not os.path.exists(credentials_path):
         raise FileNotFoundError(f"Credentials file not found at: {credentials_path}.")
 
