@@ -20,15 +20,18 @@ from datetime import datetime
 import time
 import os
 import re
+from google.oauth2 import service_account
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Humble OMS Login", layout="wide", initial_sidebar_state="expanded")
 
 # ✅ GLOBAL Google Sheets API credentials (shared across all logic)
-credentials_path = "inventory-dashboard-455009-55fd550abb75.json"
+# credentials_path = "inventory-dashboard-455009-55fd550abb75.json"
+# scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+# credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+# gc = gspread.authorize(credentials)
+
 scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
-gc = gspread.authorize(credentials)
 
 # --- SESSION STATE ---
 if "logged_in" not in st.session_state:
@@ -278,13 +281,14 @@ with st.sidebar:
     )
     
 # CONTROL TOWER CONNECTION --------------------------------------------------------------------------------------------------------------------------------------------
-
+scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
 @st.cache_data(ttl=60)
 def get_control_tower_data(sheet_index=0):
-    credentials_path = "control-tower-454909-57dd2ea0f2bc.json"
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account_control_tower"],
+        scopes=scopes  # Add the scopes here
+    )
     gc = gspread.authorize(credentials)
 
     spreadsheet_id = "1pN7lbitNgDnXmV3u-9HoXl6N_UpAGvO5OfQhpvUKf6o"
@@ -292,6 +296,7 @@ def get_control_tower_data(sheet_index=0):
     worksheet = sh.get_worksheet(sheet_index)
     data = worksheet.get_all_values()
 
+    # Rest of function remains the same
     if not data:
         return pd.DataFrame()
 
@@ -881,12 +886,18 @@ if page == "Control Tower":
                 st.error("⚠️ 'Inbound Report' column not found in the sheet.")
 
 # INVENTORY CONNECTION --------------------------------------------------------------------------------------------------------------------------------------------
+scopes = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
 
 @st.cache_data(ttl=60)
 def get_inventory_data():
-    credentials_path = "inventory-dashboard-455009-55fd550abb75.json"
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+    # Replace direct file loading with secrets
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account_inventory"],
+        scopes=scopes
+    )
     gc = gspread.authorize(credentials)
 
     spreadsheet_id = "1zjwGFngmxPszz_-imJvVqbhi856zgJLSpiI_WmIO9vI"
@@ -914,7 +925,6 @@ def get_inventory_data():
 
     df = df.reset_index(drop=True)
     return df
-
 
 def preprocess_inventory_data(df):
     numeric_cols = [
@@ -1573,14 +1583,20 @@ if page == "Inventory Dashboard":
                 st.error(f"Failed to update sheet: {e}")
 
 # INBOUNDS CONNECTION --------------------------------------------------------------------------------------------------------------------------------------------
+scopes = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
 
 @st.cache_data(ttl=60)
 def get_inventory_data():
-    credentials_path = "inbounds-dashboard-7bbf8f7a4f59.json"
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account_inbounds"],
+        scopes=scopes  # Use the global scopes variable
+    )
     gc = gspread.authorize(credentials)
-
+    
+    # Rest of the function remains the same
     spreadsheet_id = "1C13KdQDIssPB02vWd-ma2t6yWDpiIDB28e7dkc2M-vc"
     sh = gc.open_by_key(spreadsheet_id)
     worksheet = sh.get_worksheet(1)
@@ -2460,18 +2476,23 @@ if page == "Inbounds Dashboard":
    
 
 # OUTBOUNDS CONNECTION --------------------------------------------------------------------------------------------------------------------------------------------
+scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
 @st.cache_data(ttl=60)
 def get_outbounds_dashboard_data(sheet_index=1):
-    credentials_path = "outbounds-dashboard-b4e9901c3361.json"
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account_outbounds"],
+        scopes=scopes  # Use the global scopes variable
+    )
     gc = gspread.authorize(credentials)
-
+    
+    # Rest of the function remains the same
     spreadsheet_id = "1Md7tsA-oFNrqGbcbSFkOiWprUFh6hZKxTuP0edarfTU"
     sh = gc.open_by_key(spreadsheet_id)
     worksheet = sh.get_worksheet(sheet_index)
     data = worksheet.get_all_values()
+    
+    # Rest of your function code...
 
     if not data:
         return pd.DataFrame()
@@ -3003,19 +3024,17 @@ if page == "Outbounds Dashboard":
     st.dataframe(filtered_df, use_container_width=True)
 
  # --- Humble Bot Connection ---------------------------------------------------------------
-
+scopes = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
 # GSheets Setup
 @st.cache_data(ttl=300)
 def load_faq_from_gsheets():
-    credentials_path = "humblesustainability-systems-2517c09a5a25.json"
-    if not os.path.exists(credentials_path):
-        raise FileNotFoundError(f"Credentials file not found at: {credentials_path}.")
-
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-    credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account_humble"],
+        scopes=scopes  # Use the global scopes variable
+    )
     gc = gspread.authorize(credentials)
     sheet = gc.open_by_url("https://docs.google.com/spreadsheets/d/1RJIE5Ryt1J3xT7YKnBA2rvh6CYoDbGh0HGVWEtenvTE/edit").sheet1
     data = sheet.get_all_records()
@@ -3532,19 +3551,21 @@ if page == "Contact Us":
 
         st.markdown("</div>", unsafe_allow_html=True)
 
+        # Inside your contact form submission handler
         if submitted:
             st.success("Thank you! Your bug report has been submitted!")
 
-            credentials_path = "oms-bug-responses-59ca4ab5fd4f.json"
-            scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-            credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+            credentials = service_account.Credentials.from_service_account_info(
+                st.secrets["gcp_service_account_oms_bug"],
+                scopes=scopes  # Use the global scopes variable
+            )
             gc = gspread.authorize(credentials)
 
             spreadsheet_id = "1qss1KO4ii2spKbW2BCVvht8xzxTf9Br6ugofABDCP-M"
             sh = gc.open_by_key(spreadsheet_id)
             worksheet = sh.worksheet("Form Responses")
 
-            from datetime import datetime  # Make sure this is imported correctly
+            from datetime import datetime
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             worksheet.append_row([
