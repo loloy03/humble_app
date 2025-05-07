@@ -2462,7 +2462,7 @@ if page == "Inbounds Dashboard":
 # OUTBOUNDS CONNECTION --------------------------------------------------------------------------------------------------------------------------------------------
 
 @st.cache_data(ttl=60)
-def get_outbounds_dashboard_data(sheet_index=0):
+def get_outbounds_dashboard_data(sheet_index=1):
     credentials_path = "outbounds-dashboard-b4e9901c3361.json"
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
@@ -2489,20 +2489,20 @@ def get_outbounds_dashboard_data(sheet_index=0):
 # 2. Preprocess Data
 # -----------------------------------------------
 def preprocess_outbound_data(df):
-    if "PRICE" in df.columns:
-        df["PRICE"] = df["PRICE"].str.replace("\u20b1", "", regex=False).str.replace(",", "", regex=False).replace("", "0").astype(float)
+    if "Price" in df.columns:
+        df["Price"] = df["Price"].str.replace("\u20b1", "", regex=False).str.replace(",", "", regex=False).replace("", "0").astype(float)
 
     if "QTY" in df.columns:
         df["QTY"] = pd.to_numeric(df["QTY"], errors='coerce').fillna(0).astype(int)
 
-    if "WEIGHT" in df.columns:
-        df["WEIGHT"] = pd.to_numeric(df["WEIGHT"], errors='coerce').fillna(0).astype(float)
+    if "Weight" in df.columns:
+        df["Weight"] = pd.to_numeric(df["Weight"], errors='coerce').fillna(0).astype(float)
 
-    if "PULLOUT DATE" in df.columns:
-        df["PULLOUT DATE"] = pd.to_datetime(df["PULLOUT DATE"], errors='coerce')
-        df["MONTH_YEAR"] = df["PULLOUT DATE"].dt.strftime('%b %Y')
+    if "Pullout Date" in df.columns:
+        df["Pullout Date"] = pd.to_datetime(df["Pullout Date"], errors='coerce')
+        df["Month_Year"] = df["Pullout Date"].dt.strftime('%b %Y')
 
-    df["TOTAL VALUE"] = df["QTY"] * df["PRICE"]
+    df["Total Value"] = df["QTY"] * df["Price"]
 
     return df.reset_index(drop=True)
 
