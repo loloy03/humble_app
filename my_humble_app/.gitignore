@@ -1,7 +1,7 @@
 # Credentials and API keys
 *.json
 credentials.py
-secrets.toml
+.streamlit/secrets.toml
 
 # Specific credential files
 humblesustainability-systems-2517c09a5a25.json
