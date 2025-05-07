@@ -1402,6 +1402,13 @@ if page == "Inventory Dashboard":
 
         if sheet_url:
             try:
+                # Initialize gc here with credentials from secrets
+                credentials = service_account.Credentials.from_service_account_info(
+                    st.secrets["gcp_service_account_inventory"],
+                    scopes=scopes
+                )
+                gc = gspread.authorize(credentials)
+                
                 match = re.search(r"/spreadsheets/d/([a-zA-Z0-9-_]+)", sheet_url)
                 if not match:
                     st.error("❌ Invalid Google Sheets URL")
@@ -1440,7 +1447,8 @@ if page == "Inventory Dashboard":
                         st.warning("⚠️ The Inbound Report sheet is empty.")
                     else:
                         parsed_date = pd.to_datetime(date_received, errors="coerce")
-                        date_str = parsed_date.strftime("%-m/%-d/%y") if not pd.isna(parsed_date) else ""
+                        # Fix for Windows compatibility - remove the dash prefix
+                        date_str = parsed_date.strftime("%m/%d/%y").lstrip("0").replace("/0", "/") if not pd.isna(parsed_date) else ""
                         month_str = parsed_date.strftime("%b") if not pd.isna(parsed_date) else ""
                         yy_mmm_str = parsed_date.strftime("%Y %b") if not pd.isna(parsed_date) else ""
                         num_valid_rows = len(inbound_df)
