@@ -180,7 +180,7 @@ def logo_to_base64(img):
     return base64.b64encode(buffer.getvalue()).decode()
 
 # --- Load and Encode Logo ---
-logo = Image.open("humble.png")
+logo = Image.open("my_humble_app/humble.png")
 logo_base64 = logo_to_base64(logo)
 
 # --- Sidebar Logo without Rounded Corners ---
